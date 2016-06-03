@@ -21,7 +21,32 @@ function handleError(res, err) {
   });
 }
 
-app.get('/', (req, res, next) => {
+app.post('*', (req, res, next) => {
+  var postedLink = req.body;
+
+  if (!ObjectID.isValid(postedLink.topicId)) {
+    return handleError(res, 'non valid object id on topic id field: ', postedLink.topicId);
+  };
+
+  postedLink.topicId = new ObjectID(postedLink.topicId);
+  postedLink.voteCount = 0;
+
+  MongoClient.connect(req.webtaskContext.data.MONGO_URL, function (connectErr, db) {
+    if(connectErr){
+        return handleError(res, connectErr);
+    }
+
+    db.collection('links').insert(postedLink, (saveErr, result) => {
+      if (saveErr){
+        return handleError(res, saveErr);
+      }
+
+      return res.json(result);
+    });
+  });
+});
+
+app.get('*', (req, res, next) => {
   var topicId = req.query.topicId;
 
   if (!ObjectID.isValid(topicId)) {
